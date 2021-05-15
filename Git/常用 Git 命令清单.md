@@ -14,7 +14,7 @@
 
 一般来说，日常使用只要记住下图 6 个命令，就可以了。但是熟练使用，恐怕要记住 60～100 个命令。
 
-![Git](/Users/bytednce/Documents/ByteDance/Git/git.png)
+![Git](../images/Git/git.png)
 
 下面是常用 Git 命令清单。几个专用名词的译名如下：
 

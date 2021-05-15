@@ -2,7 +2,7 @@
 ## 3.1 Linux与硬件的搭配
 ### 3.1.3 各硬件设备在Linux中的档名
 『在Linux系统中，每个设备都被当成一个文件来对待』
-![设备在Linux内的档名](/Users/bytednce/Desktop/ByteDance/BackendDevTech/images/Linux/设备在Linux内的档名.png)
+![设备在Linux内的档名](../images/Linux/设备在Linux内的档名.png)
 
 ## 3.2 磁盘分区
 
@@ -30,7 +30,7 @@ MBR是很重要的，因为当系统在启动的时候会主动去读取这个�
 - 系统的效能考量：
   由于分割槽将数据集中在某个磁柱的区段，有助于数据读取的速度与效能！
 
-![磁盘分区表的作用示意图](/Users/bytednce/Desktop/ByteDance/BackendDevTech/images/Linux/磁盘分区表的作用示意图.png)
+![磁盘分区表的作用示意图](../images/Linux/磁盘分区表的作用示意图.png)
 
 主要分割、扩展分割与逻辑分割的特性可简单定义如下：
 
@@ -83,7 +83,7 @@ Linux系统里账号、密码、群组信息记录文件：
 
 ### 6.2.1 Linux文件属性
 
-### ![Linux文件权限](/Users/bytednce/Desktop/ByteDance/BackendDevTech/images/Linux/Linux文件权限.png)
+### ![Linux文件权限](../images/Linux/Linux文件权限.png)
 
 **1. 第一栏代表这个文件的类型与权限**
 
@@ -162,7 +162,7 @@ chown使用方法类似于chgrp，需要递归操作可加『 -R 』参数。
 
   使用**u, g, o**来分别代表user、group、others的身份，另外**a**代表全部的身份。
 
-  ![chmod命令的符号操作方式](/Users/bytednce/Desktop/ByteDance/BackendDevTech/images/Linux/chmod命令的符号操作方式.png)
+  ![chmod命令的符号操作方式](../images/Linux/chmod命令的符号操作方式.png)
 
   ```bash
   [root@www ~]# chmod  u=rwx,go=rx  .bashrc
@@ -242,24 +242,114 @@ FHS定义出根目录(/)下应该要有下面这些次目录的存在才好：
 | /proc       | 【内存】这个目录本身是一个『虚拟文件系统(virtual filesystem)』！它放置的数据都是在内存当中， 例如系统核心、进程信息(process)、周边设备的状态及网络状态等等。因为这个目录下的数据都是在内存当中， 所以本身不占任何硬盘空间！比较重要的文件例如：/proc/cpuinfo, /proc/dma, /proc/interrupts, /proc/ioports, /proc/net/* 等等。 |
 | /sys        | 【系统核心相关】这个目录其实跟/proc非常类似，也是一个虚拟的文件系统，主要也是记录与核心相关的信息。 包括目前已加载的核心模块与核心侦测到的硬件装置信息等等。这个目录同样不占硬盘容量！ |
 
+因为根目录与开机有关，开机过程中仅有根目录会被挂载，其他分割槽则是在开机完成之后才会持续的进行挂载的行为。因此根目录下与开机过程有关的目录，就不能够与根目录放到不同的分割槽去！相关目录有这些：
 
+- /etc：配置文件
+- /bin：重要执行档
+- /dev：所需要的设备文件
+- /lib：执行档所需的函式库与核心所需的模块
+- /sbin：重要的系统执行文件
 
-#### 6.3.1.2 根目录 (/) 的意义与内容
+#### 6.3.1.2 /usr 的意义与内容
 
-#### 6.3.1.3 根目录 (/) 的意义与内容
+usr 是 Unix Software Resource 的缩写，也就是『Unix操作系统软件资源』所放置的目录。因为是所有系统默认的软件（distribution 发布者提供的软件）都会放置到 /usr 下，因此这个目录有点类似 Windows 系统的『C:\Windows\ + C:\Program files\』这两个目录的综合体，系统刚安装完毕时，这个目录会占用最多的硬盘容量。 一般来说，/usr 的子目录建议有这些：
 
+|    目录     | 应放置文件内容                                               |
+| :---------: | :----------------------------------------------------------- |
+|  /usr/bin/  | 绝大部分的用户可使用指令都放在这里！请注意与/bin的不同之处（是否与开机过程有关） |
+|  /usr/lib/  | 包含各应用软件的函式库、目标文件(object file)，以及不被一般使用者惯用的执行档或脚本(script)。 某些软件会提供一些特殊的指令来进行服务器的设定，这些指令也不会经常被系统管理员操作， 那就会被放到这个目录下。要注意的是，如果你使用的是X86_64的Linux系统，那可能会有/usr/lib64/目录产生喔！ |
+| /usr/local/ | 系统管理员在本机自行安装自己下载的软件(非distribution默认提供者)，建议安装到此目录， 这样会比较便于管理。举例来说，你的distribution提供的软件较旧，你想安装较新的软件但又不想移除旧版，此时你可以将新版软件安装于/usr/local/目录下。/usr/local下也具有bin, etc, include, lib...等子目录！ |
+| /usr/sbin/  | 非系统正常运作所需要的系统指令。最常见的就是某些网络服务器软件的服务指令(daemon) |
+|  /usr/src/  | 一般原始码建议放置到这里，src有source的意思。至于核心原始码则建议放置到/usr/src/linux/目录下。 |
 
+#### 6.3.1.3 /var 的意义与内容
+
+/var 是在系统运作后才会渐渐占用硬盘容量的目录。因为 /var 目录主要针对常态性变动的文件，包括缓存(cache)、登录档(log file)以及某些软件运作所产生的文件，包括程序文件(lock file, run file)，或者例如 MySQL 数据库的文件等等。常见的子目录有：
+
+|    目录     | 应放置文件内容                                               |
+| :---------: | ------------------------------------------------------------ |
+| /var/cache/ | 应用程序本身运作过程中会产生的一些暂存档；                   |
+|  /var/lib/  | 程序本身执行的过程中，需要使用到的数据文件放置的目录。在此目录下各自的软件应该要有各自的目录。举例来说，MySQL 的数据库放置到/var/lib/mysql/，而rpm的数据库则放到/var/lib/rpm去！ |
+| /var/lock/  | 某些设备或者是文件资源一次只能被一个应用程序所使用，如果同时有两个程序使用该设备，就可能产生一些错误，因此就得要将该设备上锁(lock)，以确保该设备只会给单一软件所使用。 |
+|  /var/log/  | 这是**登录文件**放置的目录！里面比较重要的文件如/var/log/messages, /var/log/wtmp(记录登入者的信息)等。 |
+|  /var/run/  | 某些程序或者是服务启动后，会将他们的PID放置在这个目录下。    |
+| /var/spool/ | 这个目录通常放置一些队列数据，这些数据被使用后通常都会被删除。举例来说，系统收到新信件会放置到/var/spool/mail/中， 但使用者收下该信件后该封信原则上就会被删除。信件如果暂时寄不出去会被放到/var/spool/mqueue/中， 等到被送出后就被删除。 |
 
 ### 6.3.2 目录树(directory tree)
 
+目录不止能使用本地分区的文件系统，也可以使用网络上的 filesystem 。举例来说，可以利用 Network File System (NFS) 服务器挂载某特定目录等。
 
+![directory tree](../images/Linux/directory tree.png)
 
-### 6.3.3 绝对路径与相对路径
+# 第七章 Linux 文件与目录管理
 
+## 7.1 目录与路径
+### 7.1.2 目录的相关操作： cd, pwd, mkdir, rmdir
 
+Linux中，命令行前的『$』表示普通用户，『#』表示root用户。
 
-### 6.3.4 CentOS 的观察： lsb_release
+- cd（Change Directory）
 
+```bash
+# 进入自己的家目录
+$ cd ~
+# 进入指定用户的家目录
+$ cd ~hw
+# 返回上一个工作目录
+$ cd -
+```
 
+- pwd（Print Working Directory）
 
-## 6.4 重点回顾、本章习题、参考数据与延伸阅读
+```bash
+# 打印链接档的真实目录
+$ pwd -P
+# 例如：/var/mail是链接档，链接到/var/spool/mail
+$ cd /var/mail && pwd -P
+/var/spool/mail
+```
+
+- mkdir（Make Directory）
+
+```bash
+$ mkdir [-mp] 目录名称
+选项与参数：
+-m ：可直接配置文件的权限，不需要看默认权限 (umask) 的脸色～
+-p ：递归创建多级目录
+$ cd /tmp && mkdir -p test1/test2/test3
+# 创建权限为711的目录
+$ mkdir -m 711 test
+```
+
+- rmdir（Remove Directory，只能删除空目录）
+
+```bash
+# 自底向上删除多级空目录。先删空目录test3，删完后test2为空，可删除，再删除test1
+$ rmdir -p test1/test2/test3
+# 删除非空的目录
+$ rm -r 目录名称
+```
+
+### 7.1.3 关于运行档路径的变量：$PATH
+
+ls 命令的完整档名为：/bin/ls
+
+为什么我们可以在任何地方运行/bin/ls这个命令呢？是因为环境变量 \$PATH 的帮助所致呀！
+
+当我们运行 ls 命令的时候，系统会依照 \$PATH 定义的目录顺序，依次搜寻档名为 ls 的可运行档，如果在 \$PATH 定义的目录中含有多个档名为 ls 的可运行档，那么先搜寻到的同名命令先被运行！
+
+PATH（一定是大写）这个变量的内容是由一堆目录所组成的，每个目录中间用冒号(:)来隔开，每个目录是有顺序之分的。 
+
+```bash
+$ echo $PATH
+/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin:/root/bin
+```
+
+关于PATH变量的说明：
+
+- 不同身份使用者默认的PATH不同，默认能够随意运行的命令也不同(如root与vbird)；
+- PATH是可以修改的，所以一般使用者还是可以透过修改PATH来运行某些位于/sbin或/usr/sbin下的命令来查询；
+- 使用绝对路径或相对路径直接指定某个命令的档名来运行，会比搜寻PATH来的正确；
+- 命令应该要放置到正确的目录下，运行才会比较方便；
+- 本目录(.)最好不要放到PATH当中。
+

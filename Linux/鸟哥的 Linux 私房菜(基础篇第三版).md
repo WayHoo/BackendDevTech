@@ -83,7 +83,7 @@ Linux系统里账号、密码、群组信息记录文件：
 
 ### 6.2.1 Linux文件属性
 
-### ![Linux文件权限](../images/Linux/Linux文件权限.png)
+![Linux文件权限](../images/Linux/Linux文件权限.png)
 
 **1. 第一栏代表这个文件的类型与权限**
 
@@ -288,7 +288,7 @@ usr 是 Unix Software Resource 的缩写，也就是『Unix操作系统软件资
 
 Linux中，命令行前的『$』表示普通用户，『#』表示root用户。
 
-- cd（Change Directory）
+- **cd (Change Directory)**
 
 ```bash
 # 进入自己的家目录
@@ -299,7 +299,7 @@ $ cd ~hw
 $ cd -
 ```
 
-- pwd（Print Working Directory）
+- **pwd (Print Working Directory)**
 
 ```bash
 # 打印链接档的真实目录
@@ -309,7 +309,7 @@ $ cd /var/mail && pwd -P
 /var/spool/mail
 ```
 
-- mkdir（Make Directory）
+- **mkdir (Make Directory)**
 
 ```bash
 $ mkdir [-mp] 目录名称
@@ -321,7 +321,7 @@ $ cd /tmp && mkdir -p test1/test2/test3
 $ mkdir -m 711 test
 ```
 
-- rmdir（Remove Directory，只能删除空目录）
+- **rmdir (Remove Directory，只能删除空目录)**
 
 ```bash
 # 自底向上删除多级空目录。先删空目录test3，删完后test2为空，可删除，再删除test1
@@ -385,7 +385,7 @@ $ ls [--full-time] 目录名称
 
 ### 7.2.2 复制、删除与移动：cp, rm, mv
 
-- cp (复制文件或目录)
+- **cp (复制文件或目录)**
 
 ```bash
 $ cp [-adfilprsu] 来源档(source) 目标档(destination)
@@ -403,7 +403,7 @@ $ cp [options] source1 source2 source3 .... directory
 最后需要注意的，如果来源档有两个以上，则最后一个目的档一定要是『目录』才行！
 ```
 
-- rm (移除文件或目录)
+- **rm (移除文件或目录)**
 
 ```bash
 $ rm [-fir] 文件或目录
@@ -413,7 +413,7 @@ $ rm [-fir] 文件或目录
 -r  ：递归删除，最常用在目录的删除，这是非常危险的选项！！！
 ```
 
-- mv (移动文件与目录，或更名)
+- **mv (移动文件与目录，或更名)**
 
 ```bash
 $ mv [-fiu] source destination
@@ -437,7 +437,112 @@ $ dirname /etc/sysconfig/network
 
 ## 7.3 文件内容查阅
 ### 7.3.1 直接检视文件内容：cat, tac, nl
+
+- **cat (concatenate)**
+
+```bash
+$ cat [-AbEnTv]
+选项与参数：
+-A  ：相当于 -vET 的整合选项，可列出一些特殊字符而不是空白而已；
+-b  ：列出行号，仅针对非空白行做行号显示，空白行不标行号！
+-E  ：将结尾的断行字节 $ 显示出来；
+-n  ：列印出行号，连同空白行也会有行号，与 -b 的选项不同；
+-T  ：将 [tab] 按键以 ^I 显示出来；
+-v  ：列出一些看不出来的特殊字符
+```
+
+- **tac (反向展示，与cat相反)**
+
+- **nl (添加行号展示)**
+
+```bash
+$ nl [-bnw] 文件
+选项与参数：
+-b  ：指定行号指定的方式，主要有两种：
+      -b a ：表示不论是否为空行，也同样列出行号(类似 cat -n)；
+      -b t ：如果有空行，空的那一行不要列出行号(默认值)；
+-n  ：列出行号表示的方法，主要有三种：
+      -n ln ：行号在萤幕的最左方显示；
+      -n rn ：行号在自己栏位的最右方显示，且不加 0 ；
+      -n rz ：行号在自己栏位的最右方显示，且加 0 ；
+-w  ：行号栏位的占用的位数。
+```
+
 ### 7.3.2 可翻页检视：more, less
+
+- **more**
+
+```bash
+空白键 (space)	：代表向下翻一页；
+Enter         ：代表向下翻『一行』；
+/字串          ：代表在这个显示的内容当中，向下搜寻『字串』这个关键字；
+:f            ：立刻显示出档名以及目前显示的行数；
+q             ：代表立刻离开 more ，不再显示该文件内容。
+b 或 [ctrl]-b  ：代表往回翻页，不过这动作只对文件有用，对管线无用。
+```
+
+- **less**
+
+```bash
+空白键    	：向下翻动一页；
+[pagedown]：向下翻动一页；
+[pageup]  ：向上翻动一页；
+/字串      ：向下搜寻『字串』的功能；
+?字串      ：向上搜寻『字串』的功能；
+n         ：重复前一个搜寻 (与 / 或 ? 有关！)
+N         ：反向的重复前一个搜寻 (与 / 或 ? 有关！)
+q         ：离开 less 这个程序；
+```
+
 ### 7.3.3 数据撷取：head, tail
-### 7.3.4 非纯文字档：od
+
+- **head (取头部几行)**
+
+```bash
+$ head [-n number] 文件 
+选项与参数：
+-n  ：后面接数字，代表显示几行的意思，默认取10行。当number为负数时，表示除了尾部的number行，所有行都列出。
+```
+
+- **tail (取尾部几行)**
+
+```bash
+$ tail [-n number] 文件 
+选项与参数：
+-n  ：后面接数字，代表显示几行的意思。当number为+x格式时，表示从x行开始，后面的都会列出来。
+-f  ：表示持续监测文件内容，要等到按下[ctrl]-c才会结束tail的侦测，常用于查看日志。
+```
+
+### 7.3.4 非文字档：od
+
 ### 7.3.5 修改文件时间与建置新档：touch
+
+文件的时间参数：
+
+- **modification time (mtime)**：
+  当该文件的『内容数据』变更时，就会升级这个时间！内容数据指的是文件的内容，而不是文件的属性或权限！
+- **status time (ctime)**：
+  当该文件的『状态 (status)』改变时，就会升级这个时间。举例来说，权限与属性被更改了，都会升级这个时间。
+- **access time (atime)**：
+  当『该文件的内容被取用』时，就会升级这个读取时间 (access)。举例来说，使用 cat 去读取 /etc/man.config ， 就会升级该文件的 atime 了。
+
+touch 这个命令最常被使用的情况是：
+
+- 创建一个空的文件；
+- 将某个文件日期修订为当前时间 (mtime 与 atime)
+
+```bash
+$ touch [-acdmt] 文件
+选项与参数：
+-a  ：仅修改 access time；
+-c  ：仅修改文件的时间，若该文件不存在则不创建新文件；
+-d  ：后面可以接欲修订的日期而不用目前的日期，也可以使用 --date="日期或时间"
+-m  ：仅修改 mtime ；
+-t  ：后面可以接欲修订的时间而不用目前的时间，格式为[YYMMDDhhmm]
+```
+
+## 7.4 文件与目录的默认权限与隐藏权限
+### 7.4.1 文件默认权限：umask
+### 7.4.2 文件隐藏属性：chattr, lsattr
+### 7.4.3 文件特殊权限：SUID, SGID, SBIT, 权限配置
+### 7.4.4 观察文件类型：file

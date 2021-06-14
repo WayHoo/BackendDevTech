@@ -85,7 +85,7 @@ curl -X<VERB> '<PROTOCOL>://<HOST>:<PORT>/<PATH>?<QUERY_STRING>' -d '<BODY>'
 
 | 标记           | 含义                                                         |
 | -------------- | ------------------------------------------------------------ |
-| `VERB`         | 适当的 HTTP *方法* 或 *谓词* : `GET`、 `POST`、 `PUT`、 `HEAD` 或者 `DELETE`。 |
+| `VERB`         | 适当的 HTTP 方法或谓词 : `GET`、 `POST`、 `PUT`、 `HEAD` 或者 `DELETE`。 |
 | `PROTOCOL`     | `http` 或者 `https`（如果你在 Elasticsearch 前面有一个 `https` 代理） |
 | `HOST`         | Elasticsearch 集群中任意节点的主机名，或者用 `localhost` 代表本地机器上的节点。 |
 | `PORT`         | 运行 Elasticsearch HTTP 服务的端口号，默认是 `9200` 。       |
@@ -128,6 +128,400 @@ curl -i -XGET 'localhost:9200/'
 - 索引（Index）：类似关系型数据库（RDB）中的database
 - 类型（Type）：类似RDB中的table
 - 文档（Document）：类似table中的一行记录
+
+## 1.4 轻量搜索
+
+### 1.4.1 索引建立
+
+首先建立索引员工文档：
+
+- 每个员工索引一个文档，文档包含该员工的所有信息。
+- 每个文档都将是 `employee` *类型* 。
+- 该类型位于索引 `megacorp` 内。
+- 该索引保存在我们的 Elasticsearch 集群中。
+
+```json
+PUT /megacorp/employee/1
+{
+    "first_name" : "John",
+    "last_name" :  "Smith",
+    "age" :        25,
+    "about" :      "I love to go rock climbing",
+    "interests": [ "sports", "music" ]
+}
+```
+
+路径 `/megacorp/employee/1` 包含了三部分的信息：
+
+- **`megacorp`**：索引名称
+- **`employee`**：类型名称
+- **`1`**：特定雇员的ID
+
+增加更多的员工信息到目录中：
+
+```json
+PUT /megacorp/employee/2
+{
+    "first_name" :  "Jane",
+    "last_name" :   "Smith",
+    "age" :         32,
+    "about" :       "I like to collect rock albums",
+    "interests":  [ "music" ]
+}
+
+PUT /megacorp/employee/3
+{
+    "first_name" :  "Douglas",
+    "last_name" :   "Fir",
+    "age" :         35,
+    "about":        "I like to build cabinets",
+    "interests":  [ "forestry" ]
+}
+```
+
+### 1.4.2 检索文档
+
+根据索引库、类型和ID获取文档：
+
+```bash
+GET /megacorp/employee/1
+```
+
+返回值：
+
+```json
+{
+  "_index" :   "megacorp",
+  "_type" :    "employee",
+  "_id" :      "1",
+  "_version" : 1,
+  "found" :    true,
+  "_source" :  {
+      "first_name" :  "John",
+      "last_name" :   "Smith",
+      "age" :         25,
+      "about" :       "I love to go rock climbing",
+      "interests":  [ "sports", "music" ]
+  }
+}
+```
+
+### 1.4.3 轻量搜索
+
+**获取所有文档：**
+
+```bash
+GET /megacorp/employee/_search
+```
+
+返回结果包括了所有三个文档，放在数组 `hits` 中。一个搜索默认返回十条结果。
+
+```json
+{
+   "took":      6,
+   "timed_out": false,
+   "_shards": { ... },
+   "hits": {
+      "total":      3,
+      "max_score":  1,
+      "hits": [
+         {
+            "_index":         "megacorp",
+            "_type":          "employee",
+            "_id":            "3",
+            "_score":         1,
+            "_source": {
+               "first_name":  "Douglas",
+               "last_name":   "Fir",
+               "age":         35,
+               "about":       "I like to build cabinets",
+               "interests": [ "forestry" ]
+            }
+         },
+         {
+            "_index":         "megacorp",
+            "_type":          "employee",
+            "_id":            "1",
+            "_score":         1,
+            "_source": {
+               "first_name":  "John",
+               "last_name":   "Smith",
+               "age":         25,
+               "about":       "I love to go rock climbing",
+               "interests": [ "sports", "music" ]
+            }
+         },
+         {
+            "_index":         "megacorp",
+            "_type":          "employee",
+            "_id":            "2",
+            "_score":         1,
+            "_source": {
+               "first_name":  "Jane",
+               "last_name":   "Smith",
+               "age":         32,
+               "about":       "I like to collect rock albums",
+               "interests": [ "music" ]
+            }
+         }
+      ]
+   }
+}
+```
+
+**字段匹配搜索：**
+
+接下来，尝试下搜索姓氏为 `Smith` 的雇员。
+
+```bash
+GET /megacorp/employee/_search?q=last_name:Smith
+```
+
+其中 `q` 表示查询字符串（*query-string*） 搜索。返回值：
+
+```json
+{
+   ...
+   "hits": {
+      "total":      2,
+      "max_score":  0.30685282,
+      "hits": [
+         {
+            ...
+            "_source": {
+               "first_name":  "John",
+               "last_name":   "Smith",
+               "age":         25,
+               "about":       "I love to go rock climbing",
+               "interests": [ "sports", "music" ]
+            }
+         },
+         {
+            ...
+            "_source": {
+               "first_name":  "Jane",
+               "last_name":   "Smith",
+               "age":         32,
+               "about":       "I like to collect rock albums",
+               "interests": [ "music" ]
+            }
+         }
+      ]
+   }
+}
+```
+
+## 1.5 使用查询表达式搜索
+
+ElasticSearch 支持领域特定语言（DSL）， 使用 JSON 构造了一个请求。我们可以像这样重写之前的查询所有名为 Smith 的搜索 ：
+
+```json
+GET /megacorp/employee/_search
+{
+    "query" : {
+        "match" : {
+            "last_name" : "Smith"
+        }
+    }
+}
+```
+
+## 1.6 更复杂的搜索
+
+同样搜索姓氏为 Smith 的员工，但这次我们只需要年龄大于 30 的。
+
+```json
+GET /megacorp/employee/_search
+{
+    "query" : {
+        "bool": {
+            "must": {
+                "match" : {
+                    "last_name" : "smith" 
+                }
+            },
+            "filter": {
+                "range" : {
+                    "age" : { "gt" : 30 } 
+                }
+            }
+        }
+    }
+}
+```
+
+返回值：
+
+```json
+{
+   ...
+   "hits": {
+      "total":      1,
+      "max_score":  0.30685282,
+      "hits": [
+         {
+            ...
+            "_source": {
+               "first_name":  "Jane",
+               "last_name":   "Smith",
+               "age":         32,
+               "about":       "I like to collect rock albums",
+               "interests": [ "music" ]
+            }
+         }
+      ]
+   }
+}
+```
+
+## 1.7 全文搜索
+
+现在尝试下稍微高级点儿的全文搜索——一项传统数据库确实很难搞定的任务。
+
+搜索下所有喜欢攀岩（rock climbing）的员工：
+
+```json
+GET /megacorp/employee/_search
+{
+    "query" : {
+        "match" : {
+            "about" : "rock climbing"
+        }
+    }
+}
+```
+
+得到两个匹配的文档：
+
+```json
+{
+   ...
+   "hits": {
+      "total":      2,
+      "max_score":  0.16273327,
+      "hits": [
+         {
+            ...
+            "_score":         0.16273327, 
+            "_source": {
+               "first_name":  "John",
+               "last_name":   "Smith",
+               "age":         25,
+               "about":       "I love to go rock climbing",
+               "interests": [ "sports", "music" ]
+            }
+         },
+         {
+            ...
+            "_score":         0.016878016, 
+            "_source": {
+               "first_name":  "Jane",
+               "last_name":   "Smith",
+               "age":         32,
+               "about":       "I like to collect rock albums",
+               "interests": [ "music" ]
+            }
+         }
+      ]
+   }
+}
+```
+
+Elasticsearch 默认按照相关性得分排序，即每个文档跟查询的匹配程度。
+
+Elasticsearch中的 *相关性* 概念非常重要，也是完全区别于传统关系型数据库的一个概念，数据库中的一条记录要么匹配要么不匹配。
+
+## 1.8 短语搜索
+
+短语精确匹配，使用 `match_phrase` 查询。例如：
+
+```json
+GET /megacorp/employee/_search
+{
+    "query" : {
+        "match_phrase" : {
+            "about" : "rock climbing"
+        }
+    }
+}
+```
+
+该查询仅匹配同时包含 “rock” 和 “climbing” ，并且二者以短语 “rock climbing” 的形式紧挨着的雇员记录。
+
+```json
+{
+   ...
+   "hits": {
+      "total":      1,
+      "max_score":  0.23013961,
+      "hits": [
+         {
+            ...
+            "_score":         0.23013961,
+            "_source": {
+               "first_name":  "John",
+               "last_name":   "Smith",
+               "age":         25,
+               "about":       "I love to go rock climbing",
+               "interests": [ "sports", "music" ]
+            }
+         }
+      ]
+   }
+}
+```
+
+## 1.9 高亮搜索
+
+许多应用都倾向于在每个搜索结果中 *高亮* 部分文本片段，以便让用户知道为何该文档符合查询条件。在 Elasticsearch 中检索出高亮片段也很容易。
+
+再次执行前面的查询，并增加一个新的 `highlight` 参数：
+
+```json
+GET /megacorp/employee/_search
+{
+    "query" : {
+        "match_phrase" : {
+            "about" : "rock climbing"
+        }
+    },
+    "highlight": {
+        "fields" : {
+            "about" : {}
+        }
+    }
+}
+```
+
+当执行该查询时，返回结果与之前一样，与此同时结果中还多了一个叫做 `highlight` 的部分。这个部分包含了 `about` 属性匹配的文本片段，并以 HTML 标签 `<em></em>` 封装：
+
+```json
+{
+   ...
+   "hits": {
+      "total":      1,
+      "max_score":  0.23013961,
+      "hits": [
+         {
+            ...
+            "_score":         0.23013961,
+            "_source": {
+               "first_name":  "John",
+               "last_name":   "Smith",
+               "age":         25,
+               "about":       "I love to go rock climbing",
+               "interests": [ "sports", "music" ]
+            },
+            "highlight": {
+               "about": [
+                  "I love to go <em>rock</em> <em>climbing</em>" 
+               ]
+            }
+         }
+      ]
+   }
+}
+```
 
 
 

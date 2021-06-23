@@ -330,11 +330,11 @@ $ rmdir -p test1/test2/test3
 $ rm -r 目录名称
 ```
 
-### 7.1.3 关于运行档路径的变量：$PATH
+### 7.1.3 关于可运行档路径的变量：$PATH
 
-ls 命令的完整档名为：/bin/ls
+`ls` 命令的完整档名为：`/bin/ls`
 
-为什么我们可以在任何地方运行/bin/ls这个命令呢？是因为环境变量 \$PATH 的帮助所致呀！
+为什么我们可以在任何地方运行 `/bin/ls` 这个命令呢？是因为环境变量 \$PATH 的帮助所致呀！
 
 当我们运行 ls 命令的时候，系统会依照 \$PATH 定义的目录顺序，依次搜寻档名为 ls 的可运行档，如果在 \$PATH 定义的目录中含有多个档名为 ls 的可运行档，那么先搜寻到的同名命令先被运行！
 
@@ -543,6 +543,359 @@ $ touch [-acdmt] 文件
 
 ## 7.4 文件与目录的默认权限与隐藏权限
 ### 7.4.1 文件默认权限：umask
+
+umask 就是指定 『目前使用者在创建文件或目录时候的权限默认值』。
+
+查看当前系统的 umask 值：
+
+```bash
+$ umask
+0022             <==与一般权限有关的是后面三个数字，第一个数字是特殊权限。
+$ umask -S
+u=rwx,g=rx,o=rx
+```
+
+在默认权限的属性上，目录与文件是不一样的。从第六章我们知道 x 权限对于目录是非常重要的！ 但是一般文件的创建则不应该有运行的权限，因为一般文件通常是用在于数据的记录嘛！当然不需要运行的权限了。因此，默认的情况如下：
+
+- 若使用者创建为『文件』则默认『没有可运行( x )权限』，亦即只有 rw 这两个项目，也就是最大为 666 分，默认权限如下：
+  **-rw-rw-rw-**
+- 若使用者创建为『目录』，则由于 x 与是否可以进入此目录有关，因此默认为所有权限均开放，亦即为 777 分，默认权限如下：
+  **drwxrwxrwx**
+
+要注意的是，umask 的分数指的是『该默认值需要减掉的权限！』
+
+设定 umask 的值：
+
+```bash
+$ umask 002
+$ umask -S
+u=rwx,g=rwx,o=rx
+```
+
+总结：创建文件或目录时，其权限由两部分决定，一是文件（rw-rw-rw-）或目录（rwxrwxrwx）的默认权限，二是 umask 值。
+
+- **final value = default value - umask**
+
 ### 7.4.2 文件隐藏属性：chattr, lsattr
+
+- chattr（配置文件隐藏属性）
+
+```bash
+$ chattr [+-=][ASacdistu] 文件或目录名称
+选项与参数：
++   ：添加某一个特殊参数，其他原本存在参数则不动。
+-   ：移除某一个特殊参数，其他原本存在参数则不动。
+=   ：配置一定，且仅有后面接的参数
+
+A  ：当配置了 A 这个属性时，若你有存取此文件(或目录)时，他的存取时间 atime
+     将不会被修改，可避免I/O较慢的机器过度的存取磁碟。这对速度较慢的计算机有帮助
+S  ：一般文件是非同步写入磁碟的(原理请参考第五章sync的说明)，如果加上 S 这个
+     属性时，当你进行任何文件的修改，该更动会『同步』写入磁碟中。
+a  ：当配置 a 之后，这个文件将只能添加数据，而不能删除也不能修改数据，只有root 
+     才能配置这个属性。（例如登录日志文件，只能增加）
+c  ：这个属性配置之后，将会自动的将此文件『压缩』，在读取的时候将会自动解压缩，
+     但是在储存的时候，将会先进行压缩后再储存(看来对於大文件似乎蛮有用的！)
+d  ：当 dump 程序被运行的时候，配置 d 属性将可使该文件(或目录)不会被 dump 备份
+i  ：这个 i 可就很厉害了！他可以让一个文件『不能被删除、改名、配置连结也无法
+     写入或新增数据！』对於系统安全性有相当大的助益！只有 root 能配置此属性
+s  ：当文件配置了 s 属性时，如果这个文件被删除，他将会被完全的移除出这个硬盘
+     空间，所以如果误删了，完全无法救回来了喔！
+u  ：与 s 相反的，当使用 u 来配置文件时，如果该文件被删除了，则数据内容其实还
+     存在磁碟中，可以使用来救援该文件喔！
+注意：属性配置常见的是 a 与 i 的配置值，而且很多配置值必须要身为 root 才能配置
+```
+
+- lsattr（显示文件隐藏属性）
+
+```bash
+$ lsattr [-adR] 文件或目录
+选项与参数：
+-a ：将隐藏档的属性也秀出来；
+-d ：如果接的是目录，仅列出目录本身的属性而非目录内的档名；
+-R ：连同子目录的数据也一并列出来！ 
+```
+
 ### 7.4.3 文件特殊权限：SUID, SGID, SBIT, 权限配置
+
+注意 /tmp 和 /usr/bin/passwd 的权限：
+
+```bash
+$ ls -ld /tmp ; ls -l /usr/bin/passwd
+drwxrwxrwt 7 root root 4096 Sep 27 18:23 /tmp
+-rwsr-xr-x 1 root root 22984 Jan  7  2007 /usr/bin/passwd
+```
+
+其中出现了 `t` 和 `s` 权限标识。
+
+- **Set UID**
+
+当 s 这个标志出现在文件拥有者的 x 权限上时，例如刚刚提到的 /usr/bin/passwd 这个文件的权限状态：『-rw**s**r-xr-x』，此时就被称为 Set UID，简称为 SUID 的特殊权限。基本上 SUID 有这样的限制与功能：
+
+1. SUID 权限仅对二进位程序(binary program)有效；
+2. 运行者对于该程序需要具有 x 的可运行权限；
+3. 本权限仅在运行该程序的过程中有效 (run-time)；
+4. 运行者将具有该程序拥有者 (owner) 的权限。
+
+举个例子，Linux 系统中，所有帐号的密码都记录在 /etc/shadow 这个文件里面，这个文件的权限为：『-r-------- 1 root root』，意思是这个文件仅有 root 可读且仅有 root 可以强制写入而已。 既然如此，那为何一般用户 vbird 可以通过 `passwd` 命令修改自己的密码呢？实际上，原因如下：
+
+1. vbird 对於 /usr/bin/passwd 这个程序来说是具有 x 权限的，表示 vbird 能运行 passwd；
+2. passwd 的拥有者是 root 这个帐号；
+3. vbird 运行 passwd 的过程中，会『暂时』获得 root 的权限；
+4. /etc/shadow 就可以被 vbird 所运行的 passwd 所修改。
+
+另外，SUID 仅可用在 binary program 上， 不能够用在 shell script 上面！这是因为 shell script 只是将很多的 binary 运行档放在一起运行而已！所以 SUID 的权限部分，还是得要看 shell script 呼叫进来的程序的配置，而不是 shell script 本身。
+
+- **Set GID**
+
+当 s 标志出现在群组的 x 权限上时，则称为 Set GID。
+
+```bash
+$ ls -l /usr/bin/locate
+-rwx--s--x 1 root slocate 23856 Mar 15  2007 /usr/bin/locate
+```
+
+与 SUID 不同的是，SGID 可以针对文件或目录来配置！如果是对文件来说， SGID 有如下的功能：
+
+1. SGID 对二进位程序有用；
+2. 程序运行者对于该程序来说，需具备 x 的权限；
+3. 运行者在运行的过程中将会获得该程序群组的支持！
+
+举例来说，上面的 /usr/bin/locate 这个程序可以去搜寻 /var/lib/mlocate/mlocate.db 这个文件的内容， mlocate.db 的权限如下：
+
+```bash
+$ ll /usr/bin/locate /var/lib/mlocate/mlocate.db
+-rwx--s--x 1 root slocate   23856 Mar 15  2007 /usr/bin/locate
+-rw-r----- 1 root slocate 3175776 Sep 28 04:02 /var/lib/mlocate/mlocate.db
+```
+
+与 SUID 类似，若使用 vbird 这个帐号去运行 locate 时，那 vbird 将会取得 slocate 群组的支持，因此就能够去读取 mlocate.db。
+
+当一个目录配置了 SGID 的权限后，它将具有如下的功能：
+
+1. 使用者若对于此目录具有 r 与 x 的权限时，该使用者能够进入此目录；
+2. 使用者在此目录下的有效群组(effective group)将会变成该目录的群组；
+3. 用途：若使用者在此目录下具有 w 的权限(可以新建文件)，则使用者所创建的新文件，该新文件的群组与此目录的群组相同。
+
+- **Sticky Bit**
+
+标志为 `t`，SBIT 目前只针对目录有效。SBIT 对于目录的作用是：
+
+1. 当使用者对于此目录具有 w, x 权限，亦即具有写入的权限时；
+2. 当使用者在该目录下创建文件或目录时，仅有自己与 root 才有权力删除该文件
+
+换句话说：当甲这个使用者于 A 目录是具有群组或其他人的身份，并且拥有该目录 w 的权限，这表示『甲使用者对该目录内任何人创建的目录或文件均可进行 "删除/更名/搬移" 等动作。』 不过，如果将 A 目录加上了 SBIT 的权限项目时，则甲只能够针对自己创建的文件或目录进行删除/更名/移动等动作，而无法删除他人的文件。
+
+- **SUID/SGID/SBIT 权限配置**
+
+数字型态更改权限的方式为『三个数字』的组合， 那么如果在这三个数字之前再加上一个数字的话，最前面的那个数字就代表这几个权限了：4 为 SUID、2 为 SGID、1 为 SBIT。
+
+```bash
+$ cd /tmp
+$ touch test                  <==创建一个测试用空档
+$ chmod 4755 test; ls -l test <==加入具有 SUID 的权限
+-rwsr-xr-x 1 root root 0 Sep 29 03:06 test
+$ chmod 6755 test; ls -l test <==加入具有 SUID/SGID 的权限
+-rwsr-sr-x 1 root root 0 Sep 29 03:06 test
+$ chmod 1755 test; ls -l test <==加入 SBIT 的功能！
+-rwxr-xr-t 1 root root 0 Sep 29 03:06 test
+$ chmod 7666 test; ls -l test <==具有空的 SUID/SGID 权限
+-rwSrwSrwT 1 root root 0 Sep 29 03:06 test
+```
+
+最后一个例子中出现了 `S` 和 `T`，表示空权限的意思。666 表示 user, group 以及 others 都没有 x 这个可运行的标志，那么 SUID/SGID/SBIT 的配置毫无意义。
+
+除了数字法之外，也可以透过符号法来处理！其中 SUID 为 u+s ，而 SGID 为 g+s ，SBIT 则是 o+t ！
+
+```bash
+# 配置权限成为 -rws--x--x 的模样：
+$ chmod u=rwxs,go=x test; ls -l test
+-rws--x--x 1 root root 0 Aug 18 23:47 test
+
+# 承上，加上 SGID 与 SBIT 在上述的文件权限中！
+$ chmod g+s,o+t test; ls -l test
+-rws--s--t 1 root root 0 Aug 18 23:47 test
+```
+
 ### 7.4.4 观察文件类型：file
+
+如果想要知道某个文件的基本数据，例如是属于 ASCII 或者是 data 文件，或者是 binary，且其中有没有使用到动态函式库 (share library) 等等的资讯，就可以利用 file 这个命令来检阅！
+
+```bash
+$ file ~/.bashrc
+/root/.bashrc: ASCII text  <==告诉我们是 ASCII 的纯文字档！
+$ file /usr/bin/passwd
+/usr/bin/passwd: setuid ELF 32-bit LSB executable, Intel 80386, version 1 
+(SYSV), for GNU/Linux 2.6.9, dynamically linked (uses shared libs), for 
+GNU/Linux 2.6.9, stripped
+# 运行档的数据可就多的不得了！包括这个文件的 suid 权限、兼容于 Intel 386
+# 等级的硬件平台、使用的是 Linux 核心 2.6.9 的动态函式库连结等等。
+$ file /var/lib/mlocate/mlocate.db
+/var/lib/mlocate/mlocate.db: data  <== 这是 data 文件！
+```
+
+透过这个命令，我们可以简单的先判断这个文件的格式为何！
+
+## 7.5 命令与文件的搜寻：
+### 7.5.1 命令档名的搜寻：which
+
+```bash
+$ which [-a] command
+选项或参数：
+-a ：将所有由 PATH 目录中可以找到的命令均列出，而不止第一个被找到的命令名称
+```
+
+`which` 是根据使用者所配置的 PATH 变量内的目录去搜寻可运行档的！
+
+使用 `which` 无法找到 `cd` 命令， 因为 `cd` 是 bash 内建命令。
+
+### 7.5.2 文件档名的搜寻：whereis, locate, find
+
+- **find**
+- **whereis**
+
+```bash
+$ whereis [-bmsu] 文件或目录名
+选项与参数：
+-b    :只找 binary 格式的文件
+-m    :只找在说明档 manual 路径下的文件
+-s    :只找 source 来源文件
+-u    :搜寻不在上述三个项目当中的其他特殊文件
+```
+
+Linux 会将系统内的所有文件都记录在一个数据库文件里面，而当使用 `whereis` 或 `locate` 时，都会以此数据库文件的内容为准。因此，使用这两个命令，有时会找到已经被删除的文件，或者找不到最新创建的文件，这是因为最新的文件变动信息尚未写入数据库。
+
+- **locate**
+
+```bash
+$ locate [-ir] keyword
+选项与参数：
+-i  ：忽略大小写的差异；
+-r  ：后面可接正则表示法的显示方式
+```
+
+`locate` 命令与 `whereis` 的一个很大不同是，`locate` 命令后面仅跟文件的部分名称即可。
+
+`locate` 寻找的数据是由『已创建的数据库 /var/lib/mlocate/』 里面的数据所搜寻到的，数据库的创建/更新默认是在每天运行一次 (每个 distribution 都不同，CentOS 5.x 是每天升级数据库一次！)。因此存在查找不到数据或查找到已删除的数据的情况。
+
+可通过 `updatedb ` 命令手动升级数据库，该命令会去读取 /etc/updatedb.conf 这个配置文件，然后读取硬盘更新数据库。该命令较为耗时，约几分钟。
+
+- **find**
+
+```bash
+$ find [PATH] [option] [action]
+选项与参数：
+1. 与时间有关的选项：共有 -atime, -ctime 与 -mtime ，以 -mtime 说明
+   -mtime  n ：n 为数字，意义为在 n 天之前的『一天之内』被更动过内容的文件；
+   -mtime +n ：列出在 n 天之前(不含 n 天本身)被更动过内容的文件档名；
+   -mtime -n ：列出在 n 天之内(含 n 天本身)被更动过内容的文件档名。
+   -newer file ：file 为一个存在的文件，列出比 file 还要新的文件档名
+   
+范例一：将过去系统上面 24 小时内有更动过内容 (mtime) 的文件列出
+$ find / -mtime 0
+# 那个 0 是重点！0 代表目前的时间，所以，从现在开始到 24 小时前，
+# 有变动过内容的文件都会被列出来！那如果是三天前的 24 小时内？
+# find / -mtime 3 有变动过的文件都被列出的意思！
+
+范例二：寻找 /etc 底下的文件，如果文件日期比 /etc/passwd 新就列出
+$ find /etc -newer /etc/passwd
+# -newer 用在分辨两个文件之间的新旧关系是很有用的！
+```
+
+![find 相关的时间参数意义](../images/Linux/find_time.jpg)
+
+```bash
+选项与参数：
+2. 与使用者或群组名称有关的参数：
+   -uid n ：n 为数字，这个数字是使用者的帐号 ID，亦即 UID ，这个 UID 是记录在
+            /etc/passwd 里面与帐号名称对应的数字
+   -gid n ：n 为数字，这个数字是群组名称的 ID，亦即 GID，这个 GID 记录在 /etc/group
+   -user name ：name 为使用者帐号名称
+   -group name：name 为群组名称
+   -nouser    ：寻找文件的拥有者不存在于 /etc/passwd 的文件
+   -nogroup   ：寻找文件的拥有群组不存在于 /etc/group 的文件
+                当你自行安装软件时，很可能该软件的属性当中并没有文件拥有者，
+                这是可能的！在这个时候，就可以使用 -nouser 与 -nogroup 搜寻。
+                
+3. 与文件权限及名称有关的参数：
+   -name filename：搜寻文件名称为 filename 的文件；
+   -size [+-]SIZE：搜寻比 SIZE 还要大(+)或小(-)的文件。这个 SIZE 的规格有：
+                   c: 代表 byte， k: 代表 1024bytes。所以，要找比 50KB
+                   还要大的文件，就是『 -size +50k 』
+   -type TYPE    ：搜寻文件的类型为 TYPE 的，类型主要有：一般正规文件 (f),
+                   装置文件 (b, c), 目录 (d), 连结档 (l), socket (s), 
+                   及 FIFO (p) 等属性。
+   -perm mode  ：搜寻文件权限『刚好等于』mode 的文件，这个 mode 为类似 chmod
+                 的属性值，举例来说， -rwsr-xr-x 的属性为 4755 ！
+   -perm -mode ：搜寻文件权限『必须要全部囊括 mode 的权限』的文件，举例来说，
+                 我们要搜寻 -rwxr--r-- ，亦即 0744 的文件，使用 -perm -0744，
+                 当一个文件的权限为 -rwsr-xr-x ，亦即 4755 时，也会被列出来，
+                 因为 -rwsr-xr-x 的属性已经囊括了 -rwxr--r-- 的属性了。
+   -perm +mode ：搜寻文件权限『包含任一 mode 的权限』的文件，举例来说，我们搜寻
+                 -rwxr-xr-x ，亦即 -perm +755 时，但一个文件属性为 -rw-------
+                 也会被列出来，因为他有 -rw.... 的属性存在！
+                 
+4. 额外可进行的动作：
+   -exec command ：command 为其他命令，-exec 后面可再接额外的命令来处理搜寻到的结果。
+   -print        ：将结果列印到萤幕上，这个动作是默认动作！
+
+$ find / -perm +7000 -exec ls -l {} \;
+# 注意到，那个 -exec 后面的 ls -l 就是额外的命令，命令不支持命令别名
+# {} 代表的是『由 find 找到的内容』，如上图所示，find 的结果会被放置到 {} 位置中；
+# -exec 一直到 \; 是关键字，代表 find 额外动作的开始 (-exec) 到结束 (\;) ，在这中间的就是 find 命令内的额外动作。在本例中就是『 ls -l {} 』
+# 因为『 ; 』在 bash 环境下是有特殊意义的，因此利用反斜线来跳脱。
+```
+
+# 第八章 Linux 磁盘与文件系统管理
+
+## 8.1 认识 EXT2 文件系统
+
+EXT2 是 Linux 最传统的磁盘文件系统(filesystem)。
+
+### 8.1.2 文件系统特性：索引式文件系统
+
+较新的操作系统的文件数据除了文件实际内容外，通常含有非常多的属性，例如 Linux 操作系统的文件权限(rwx)与文件属性(拥有者、群组、时间参数等)。 文件系统通常会将这两部份的数据分别存放在不同的区块，权限与属性放置到 inode 中，至于实际数据则放置到 data block 区块中。 另外，还有一个超级区块 (superblock) 会记录整个文件系统的整体信息，包括 inode 与 block 的总量、使用量、剩余量等。
+
+每个 inode 与 block 都有编号，至于这三个数据的意义可以简略说明如下：
+
+- superblock：记录此 filesystem 的整体信息，包括inode/block的总量、使用量、剩余量，以及文件系统的格式与相关信息等；
+- inode：记录文件的属性，一个文件占用一个inode，同时记录此文件的数据所在的 block 号码；
+- block：实际记录文件的内容，若文件太大时，会占用多个 block 。
+
+文件系统先格式化出 inode 与 block 的区块，假设某一个文件的属性与权限数据是放置到 inode 4 号(下图较小方格内)，而这个 inode 记录了文件数据的实际放置点为 2, 7, 13, 15 这四个 block 号码，此时我们的操作系统就能够据此来排列磁盘的阅读顺序，可以一口气将四个 block 内容读出来！
+
+![inode/block 数据存取示意图](../images/Linux/filesystem-1.jpg)
+
+这种数据存取的方法我们称为索引式文件系统(indexed allocation)。作为对比，闪存使用的文件系统一般为 FAT 格式。FAT 这种格式的文件系统并没有 inode 存在，所以 FAT 没有办法将这个文件的所有 block 在一开始就读取出来。每个 block 号码都记录在前一个 block 当中， 他的读取方式有点像底下这样：
+
+![FAT文件系统数据存取示意图](../images/Linux/filesystem-2.jpg)
+
+上图中我们假设文件的数据依序写入1->7->4->15号这四个 block 号码中，但这个文件系统没有办法一口气就知道四个 block 的号码，他得要一个一个的将 block 读出后，才会知道下一个 block 在何处。 如果同一个文件数据写入的 block 太过分散时，则我们的磁盘读取头将无法在磁盘转一圈就读到所有的数据，因此磁盘就会多转好几圈才能完整的读取到这个文件的内容！
+
+常常会听到所谓的『碎片整理』吧？ 需要碎片整理的原因就是文件写入的 block 太过于离散了，此时文件读取的效能将会变的很差所致。 这个时候可以透过碎片整理将同一个文件所属的 blocks 汇整在一起，这样数据的读取会比较容易啊！ 想当然尔，FAT 的文件系统需要经常的碎片整理一下，那么 Ext2 是否需要磁盘重整呢？
+
+由于 Ext2 是索引式文件系统，基本上不太需要常常进行碎片整理的。但是如果文件系统使用太久，常常删除/编辑/新增文件时，那么还是可能会造成文件数据太过于离散的问题，此时或许会需要进行重整一下的。
+
+### 8.1.3 Linux 的 EXT2 文件系统(inode): data block, inode table, superblock, dumpe2fs
+
+文件系统一开始就将 inode 与 block 规划好了，除非重新格式化(或者利用 resize2fs 等命令变更文件系统大小)，否则 inode 与 block 固定后就不再变动。但是如果仔细考虑一下，如果我的文件系统高达数百GB时，那么将所有的 inode 与 block 通通放置在一起将是很不明智的，因为 inode 与 block 的数量太庞大，不容易管理。
+
+为此，Ext2 文件系统在格式化的时候基本上是区分为多个区块群组 (block group) 的，每个区块群组都有独立的 inode/block/superblock 系统。Ext2 格式化后有点像底下这样：
+
+![ext2文件系统示意图](../images/Linux/ext2_filesystem.jpg)
+
+在整体的规划当中，文件系统最前面有一个启动扇区(boot sector)，这个启动扇区可以安装启动管理程序，这是个非常重要的设计，因为如此一来我们就能够将不同的启动管理程序安装到个别的文件系统最前端，而不用覆盖整个硬盘唯一的 MBR，这样也才能够制作出多重引导的环境！
+
+每一个区块群组(block group)的六个主要内容说明如下：
+
+- **data block (数据区块)**
+- **inode table (inode 表)**
+- **Superblock (超级区块)**
+- **Filesystem Description (文件系统描述说明)**
+- **block bitmap (区块对照表)**
+- **inode bitmap (inode 对照表)**
+
+### 8.1.4 与目录树的关系
+### 8.1.5 EXT2/EXT3 文件的存取与日志式文件系统的功能
+### 8.1.6 Linux 文件系统的运行
+### 8.1.7 挂载点的意义 (mount point)
+### 8.1.8 其他 Linux 支持的文件系统与 VFS
